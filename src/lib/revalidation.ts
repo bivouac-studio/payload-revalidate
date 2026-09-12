@@ -198,35 +198,35 @@ export async function getRevalidationTagsCollectionItem(
       if (!relations.length) {
         continue
       }
-      const where: Where = {
-        or: relations.map(
-          (field): Where =>
-            field.polymorphic
-              ? {
-                  and: [
-                    { [`${field.path}.relationTo`]: { equals: modified.collection } },
-                    { [`${field.path}.value`]: { equals: modified.id } },
-                  ],
-                }
-              : { [field.path]: { equals: modified.id } },
-        ),
-      }
-      let page = 1
-      while (true) {
-        const result = await payload.find({
-          ...readOptions,
-          collection: owner.slug,
-          limit: 100,
-          page,
-          where,
-        })
-        for (const ownerDoc of result.docs) {
-          enqueue(owner.slug, ownerDoc)
+      // Payload's SQL adapter can reuse a block-table alias when multiple
+      // relation paths share an OR query. Query each distinct path separately.
+      const distinct = new Map(relations.map((field) => [field.path, field]))
+      for (const field of distinct.values()) {
+        const where: Where = field.polymorphic
+          ? {
+              and: [
+                { [`${field.path}.relationTo`]: { equals: modified.collection } },
+                { [`${field.path}.value`]: { equals: modified.id } },
+              ],
+            }
+          : { [field.path]: { equals: modified.id } }
+        let page = 1
+        while (true) {
+          const result = await payload.find({
+            ...readOptions,
+            collection: owner.slug,
+            limit: 100,
+            page,
+            where,
+          })
+          for (const ownerDoc of result.docs) {
+            enqueue(owner.slug, ownerDoc)
+          }
+          if (!result.hasNextPage) {
+            break
+          }
+          page++
         }
-        if (!result.hasNextPage) {
-          break
-        }
-        page++
       }
     }
   }
