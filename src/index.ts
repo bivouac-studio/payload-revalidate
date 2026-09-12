@@ -1,10 +1,6 @@
 import type { Config } from 'payload'
 
-import {
-  revalidateCollectionChange,
-  revalidateCollectionDelete,
-  revalidateGlobal,
-} from './hooks/revalidate.js'
+import { createRevalidationHooks, revalidateGlobal } from './hooks/revalidate.js'
 
 export type PayloadRevalidateConfig = {
   enable?: boolean
@@ -24,6 +20,8 @@ export const payloadRevalidate =
       return config
     }
 
+    const hooks = createRevalidationHooks(pluginOptions.maxDepth)
+
     if (config.collections) {
       for (const collection of config.collections) {
         if (!collection.hooks) {
@@ -36,8 +34,10 @@ export const payloadRevalidate =
           collection.hooks.afterDelete = []
         }
         // Revalidation hooks should be trigger at the end of the hooks chain
-        collection.hooks.afterChange.push(revalidateCollectionChange)
-        collection.hooks.afterDelete.push(revalidateCollectionDelete)
+        collection.hooks.beforeDelete ??= []
+        collection.hooks.beforeDelete.push(hooks.beforeDelete)
+        collection.hooks.afterChange.push(hooks.afterChange)
+        collection.hooks.afterDelete.push(hooks.afterDelete)
       }
     }
 

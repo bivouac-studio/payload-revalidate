@@ -1,6 +1,6 @@
 {
   "name": "payload-revalidate",
-  "version": "0.6.4",
+  "version": "0.7.0",
   "description": "A plugin to use PayloadCMS with next/cache architecture, revalidating payload data.",
   "license": "MIT",
   "type": "module",
@@ -46,9 +46,6 @@
     "test:e2e": "playwright test",
     "test:int": "vitest"
   },
-  "dependencies": {
-    "next": "^15.5.4"
-  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "@payloadcms/db-postgres": "^3.57.0",
@@ -81,10 +78,11 @@
     "typescript": "5.7.3",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.2",
-    "zod": "^4.1.7"
+    "zod": "^4.1.7",
+    "next": "15.5.4"
   },
   "peerDependencies": {
-    "next": "^15.5.4",
+    "next": "^15.5.4 || ^16.0.0",
     "payload": "^3.57.0"
   },
   "engines": {
