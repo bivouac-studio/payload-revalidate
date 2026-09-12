@@ -18,5 +18,5 @@ test('revalidates correctly globals on update', async () => {
   })
   await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(1)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('mainMenu')
+  expect(mockRevalidateTag).toHaveBeenCalledWith('mainMenu', { expire: 0 })
 })

@@ -1,67 +1,23 @@
-import {
-  type PayloadRequest,
-  type RequestContext,
-  type SanitizedCollectionConfig,
-  type SanitizedGlobalConfig,
-  type TypeWithID,
+import type {
+  PayloadRequest,
+  RequestContext,
+  SanitizedCollectionConfig,
+  SanitizedGlobalConfig,
+  TypeWithID,
+  Where,
 } from 'payload'
-import { z } from 'zod'
 
-import { buildRelationTree } from './config-parser.js'
-import { get } from './object-utils.js'
+import {
+  extractRelationFieldPaths,
+  INTERNAL_COLLECTIONS,
+  type RelationPath,
+} from './config-parser.js'
 
 export interface RevalidateCollectionParams<T extends TypeWithID = TypeWithID> {
-  /** The collection which this hook is being run on */
   collection: SanitizedCollectionConfig
   context: RequestContext
   doc: T
   req: PayloadRequest
-}
-
-/**
- * TODO : this is a new version, which seem to handle relations AND blocks, but not heavily tested
- */
-export const getRevalidationTagsCollectionItem = async (
-  params: RevalidateCollectionParams,
-): Promise<string[]> => {
-  const payload = params.req.payload
-
-  // Use a set to avoid duplicate tags and improve readability
-  const tagsToRevalidate = new Set<string>()
-
-  const { collection, doc } = params
-  const collectionSlug = collection?.slug
-
-  tagsToRevalidate.add(collectionSlug)
-
-  const parsedDoc = z
-    .object({ id: z.number().optional(), slug: z.string().optional() })
-    .safeParse(doc)
-
-  if (parsedDoc.success) {
-    if (parsedDoc.data.id) {
-      tagsToRevalidate.add(`${collectionSlug}.${parsedDoc.data.id}`)
-    }
-    if (parsedDoc.data.slug) {
-      tagsToRevalidate.add(`${collectionSlug}.${parsedDoc.data.slug}`)
-    }
-  }
-
-  // Find all collections which have a relation to this item, and revalidate them as well
-  // Recursively handle relations nested inside containers like "blocks", "array", and "group".
-  const relationTags = await getTagsFromRelations({
-    context: 'collection',
-    docId: doc.id,
-    modifiedSlug: collectionSlug,
-    payload,
-  })
-
-  // Merge relation tags with existing tags
-  for (const tag of relationTags) {
-    tagsToRevalidate.add(tag)
-  }
-
-  return Array.from(tagsToRevalidate)
 }
 
 export interface RevalidateGlobalParams<T extends TypeWithID = TypeWithID> {
@@ -71,129 +27,220 @@ export interface RevalidateGlobalParams<T extends TypeWithID = TypeWithID> {
   req: PayloadRequest
 }
 
-export const getRevalidationTagsGlobalItem = async (
-  params: RevalidateGlobalParams,
-): Promise<string[]> => {
-  const payload = params.req.payload
+type Document = { id: number | string; slug?: unknown }
+type Reference = { collection: string; id: number | string }
+const record = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+const idOf = (value: unknown): number | string | undefined => {
+  const id = record(value) ? value.id : value
+  return typeof id === 'number' || typeof id === 'string' ? id : undefined
+}
+const keyOf = ({ id, collection }: Reference) => JSON.stringify([collection, String(id)])
 
-  // Use a set to avoid duplicate tags and improve readability
-  const tagsToRevalidate = new Set<string>()
-
-  const { doc, global } = params
-  const globalSlug = global?.slug
-
-  tagsToRevalidate.add(globalSlug)
-
-  // Find all collections which have a relation to this global, and revalidate them as well
-  // Recursively handle relations nested inside containers like "blocks", "array", and "group".
-  const relationTags = await getTagsFromRelations({
-    context: 'global',
-    docId: doc.id,
-    modifiedSlug: globalSlug,
-    payload,
-  })
-
-  // Merge relation tags with existing tags
-  for (const tag of relationTags) {
-    tagsToRevalidate.add(tag)
+// Only walk Lexical nodes, never a populated document's own fields.
+export function lexicalReferences(value: unknown): Reference[] {
+  if (!record(value)) {
+    return []
   }
-
-  return Array.from(tagsToRevalidate)
+  if (record(value.root)) {
+    return lexicalReferences(value.root)
+  }
+  const refs: Reference[] = []
+  const relation =
+    value.type === 'link' || value.type === 'autolink'
+      ? record(value.fields) && value.fields.linkType === 'internal'
+        ? value.fields.doc
+        : undefined
+      : value.type === 'upload' || value.type === 'relationship'
+        ? value
+        : undefined
+  if (record(relation) && typeof relation.relationTo === 'string') {
+    const id = idOf(relation.value)
+    if (id !== undefined) {
+      refs.push({ id, collection: relation.relationTo })
+    }
+  }
+  if (Array.isArray(value.children)) {
+    for (const child of value.children) {
+      refs.push(...lexicalReferences(child))
+    }
+  }
+  return refs
 }
 
-/**
- * Get revalidation tags for relations to a modified item (collection or global)
- */
-const getTagsFromRelations = async (params: {
-  context: 'collection' | 'global'
-  docId: number | string
-  modifiedSlug: string
-  payload: PayloadRequest['payload']
-}): Promise<Set<string>> => {
-  const { context, docId, modifiedSlug, payload } = params
-  const config = payload.config
-  const tagsToRevalidate = new Set<string>()
+function valuesAt(value: unknown, path: string[], locales: string[]): unknown[] {
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => valuesAt(item, path, locales))
+  }
+  if (record(value) && !('root' in value) && locales.some((locale) => locale in value)) {
+    return locales.flatMap((locale) => valuesAt(value[locale], path, locales))
+  }
+  if (!path.length) {
+    return [value]
+  }
+  if (!record(value)) {
+    return []
+  }
+  return valuesAt(value[path[0]], path.slice(1), locales)
+}
 
-  // Get relation trees for all collections and globals at once
-  const allRelationTrees = buildRelationTree(config)
+function addTags(tags: Set<string>, collection: string, doc: Document) {
+  tags.add(collection)
+  tags.add(`${collection}.${doc.id}`)
+  if (typeof doc.slug === 'string' && doc.slug) {
+    tags.add(`${collection}.${doc.slug}`)
+  }
+}
 
-  // Handle collections
-  for (const configCollection of config.collections) {
-    const relationFields = allRelationTrees.collections[configCollection.slug] || []
+export const getRevalidationTagsGlobalItem = (params: RevalidateGlobalParams): Promise<string[]> =>
+  Promise.resolve([params.global.slug])
 
-    for (const relationField of relationFields) {
-      const isRelationToModifiedItem = relationField.relationTo.includes(modifiedSlug)
-      if (!isRelationToModifiedItem) {
-        continue
-      }
-      try {
-        const relatedDocuments = await payload.find({
-          collection: configCollection.slug,
-          // TODO solve this "limit" issue
-          limit: 10000,
-          where: { [relationField.path]: { equals: docId } },
-        })
+/** Walk reverse relations one hop at a time so JSON uploads and SQL relations can mix. */
+export async function getRevalidationTagsCollectionItem(
+  params: RevalidateCollectionParams,
+  maxDepth = 0,
+): Promise<string[]> {
+  const { collection, doc, req } = params
+  const { payload } = req
+  const tags = new Set<string>()
+  addTags(tags, collection.slug, doc)
+  const collections = payload.config.collections.filter(
+    (item) => !INTERNAL_COLLECTIONS.includes(item.slug),
+  )
+  const fields = new Map(
+    collections.map((item) => [item.slug, extractRelationFieldPaths(item.fields)]),
+  )
+  const locales = payload.config.localization ? payload.config.localization.localeCodes : []
+  const readOptions = { depth: 0, locale: 'all' as const, overrideAccess: true, req }
+  const richOwners = new Map<string, { collection: string; doc: Document }[]>()
+  const globals = new Map<string, Set<string>>()
 
-        // Add tags for related documents that reference the modified item
-        if (relatedDocuments.docs.length > 0) {
-          tagsToRevalidate.add(configCollection.slug)
-        }
-        for (const relatedDocument of relatedDocuments.docs) {
-          const id = relatedDocument?.id
-          tagsToRevalidate.add(`${configCollection.slug}.${id}`)
-          if (relatedDocument?.slug) {
-            tagsToRevalidate.add(`${configCollection.slug}.${relatedDocument.slug}`)
+  // JSON paths are not portable between Payload database adapters. Scan only
+  // collections with rich text, once per mutation, in bounded database batches.
+  for (const owner of collections) {
+    const richFields = fields.get(owner.slug)!.filter((field) => field.richText)
+    if (!richFields.length) {
+      continue
+    }
+    let page = 1
+    while (true) {
+      const result = await payload.find({
+        ...readOptions,
+        collection: owner.slug,
+        limit: 100,
+        page,
+      })
+      for (const ownerDoc of result.docs) {
+        for (const field of richFields) {
+          for (const value of valuesAt(ownerDoc, field.path.split('.'), locales)) {
+            for (const ref of lexicalReferences(value)) {
+              const key = keyOf(ref)
+              const owners = richOwners.get(key) ?? []
+              owners.push({ collection: owner.slug, doc: ownerDoc })
+              richOwners.set(key, owners)
+            }
           }
         }
-      } catch (e) {
-        payload.logger.error(
-          {
-            configCollectionSlug: configCollection.slug,
-            context,
-            error: e,
-            modifiedSlug,
-            relationFieldPath: relationField.path,
-          },
-          'Error during deep revalidation',
-        )
+      }
+      if (!result.hasNextPage) {
+        break
+      }
+      page++
+    }
+  }
+
+  // Globals cannot be relationship targets; record their outgoing references.
+  for (const global of payload.config.globals) {
+    const paths = extractRelationFieldPaths(global.fields)
+    if (!paths.length) {
+      continue
+    }
+    const value = await payload.findGlobal({ ...readOptions, slug: global.slug })
+    for (const field of paths) {
+      for (const entry of valuesAt(value, field.path.split('.'), locales)) {
+        const refs = field.richText ? lexicalReferences(entry) : relationReferences(entry, field)
+        for (const ref of refs) {
+          const key = keyOf(ref)
+          const owners = globals.get(key) ?? new Set<string>()
+          owners.add(global.slug)
+          globals.set(key, owners)
+        }
       }
     }
   }
 
-  // Handle globals
-  for (const configGlobal of config.globals || []) {
-    const relationFields = allRelationTrees.globals[configGlobal.slug] || []
-
-    for (const relationField of relationFields) {
-      const isRelationToModifiedItem = relationField.relationTo.includes(modifiedSlug)
-      if (!isRelationToModifiedItem) {
+  const queue = [{ id: doc.id, collection: collection.slug, depth: 0 }]
+  const visited = new Set<string>()
+  for (let index = 0; index < queue.length; index++) {
+    const modified = queue[index]
+    const key = keyOf(modified)
+    if (visited.has(key)) {
+      continue
+    }
+    visited.add(key)
+    if (maxDepth > 0 && modified.depth >= maxDepth) {
+      continue
+    }
+    for (const global of globals.get(key) ?? []) {
+      tags.add(global)
+    }
+    const enqueue = (slug: string, owner: Document) => {
+      addTags(tags, slug, owner)
+      queue.push({ id: owner.id, collection: slug, depth: modified.depth + 1 })
+    }
+    for (const owner of richOwners.get(key) ?? []) {
+      enqueue(owner.collection, owner.doc)
+    }
+    for (const owner of collections) {
+      const relations = fields
+        .get(owner.slug)!
+        .filter((field) => field.relationTo.includes(modified.collection))
+      if (!relations.length) {
         continue
       }
-      try {
-        // For globals, we need to check if the global value has the relation
-        const globalValue = await payload.findGlobal({
-          slug: configGlobal.slug,
+      const where: Where = {
+        or: relations.map(
+          (field): Where =>
+            field.polymorphic
+              ? {
+                  and: [
+                    { [`${field.path}.relationTo`]: { equals: modified.collection } },
+                    { [`${field.path}.value`]: { equals: modified.id } },
+                  ],
+                }
+              : { [field.path]: { equals: modified.id } },
+        ),
+      }
+      let page = 1
+      while (true) {
+        const result = await payload.find({
+          ...readOptions,
+          collection: owner.slug,
+          limit: 100,
+          page,
+          where,
         })
-
-        // Check if the global has the relation field pointing to the modified item
-        // Use get() to handle nested paths like "featuredPost.author"
-        if (globalValue && get(globalValue, relationField.path + '.id') === docId) {
-          tagsToRevalidate.add(configGlobal.slug)
+        for (const ownerDoc of result.docs) {
+          enqueue(owner.slug, ownerDoc)
         }
-      } catch (e) {
-        payload.logger.error(
-          {
-            configGlobalSlug: configGlobal.slug,
-            context,
-            error: e,
-            modifiedSlug,
-            relationFieldPath: relationField.path,
-          },
-          'Error during deep revalidation for global',
-        )
+        if (!result.hasNextPage) {
+          break
+        }
+        page++
       }
     }
   }
+  return [...tags]
+}
 
-  return tagsToRevalidate
+function relationReferences(value: unknown, field: RelationPath): Reference[] {
+  if (field.polymorphic) {
+    if (!record(value) || typeof value.relationTo !== 'string') {
+      return []
+    }
+    const id = idOf(value.value)
+    return id === undefined ? [] : [{ id, collection: value.relationTo }]
+  }
+  const id = idOf(value)
+  return id === undefined ? [] : field.relationTo.map((collection) => ({ id, collection }))
 }

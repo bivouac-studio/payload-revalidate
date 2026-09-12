@@ -13,8 +13,8 @@ test('revalidates correctly collections on create', async () => {
   })
   await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
 })
 
 test('revalidates correctly collections on update', async () => {
@@ -35,8 +35,8 @@ test('revalidates correctly collections on update', async () => {
   })
   await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${updatedAuthor.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${updatedAuthor.id}`, { expire: 0 })
 })
 
 test('revalidates correctly collections on delete', async () => {
@@ -54,6 +54,6 @@ test('revalidates correctly collections on delete', async () => {
   })
   await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${createdAuthor.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${createdAuthor.id}`, { expire: 0 })
 })

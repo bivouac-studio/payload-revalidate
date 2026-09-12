@@ -32,8 +32,8 @@ test('revalidates correctly relations for depth 1', async () => {
 
   // Verify revalidateTag was called for author creation
   expect(mockRevalidateTag).toHaveBeenCalledTimes(2)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
 
   mockRevalidateTag.mockClear()
   mockAfter.mockClear()
@@ -60,9 +60,9 @@ test('revalidates correctly relations for depth 1', async () => {
 
   // Verify revalidateTag was called for post creation
   expect(mockRevalidateTag).toHaveBeenCalledTimes(3)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
 
   mockRevalidateTag.mockClear()
   mockAfter.mockClear()
@@ -79,11 +79,11 @@ test('revalidates correctly relations for depth 1', async () => {
 
   // Verify that revalidateTag was called for related collections
   expect(mockRevalidateTag).toHaveBeenCalledTimes(5)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
 
   mockRevalidateTag.mockClear()
   mockAfter.mockClear()
@@ -96,19 +96,19 @@ test('revalidates correctly relations for depth 1', async () => {
   await waitForAfterCalls()
 
   expect(mockRevalidateTag).toHaveBeenCalledTimes(5)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
   mockRevalidateTag.mockClear()
 
   await payload.delete({ collection: 'posts', where: { title: { equals: 'added by plugin' } } })
 
   expect(mockRevalidateTag).toHaveBeenCalledTimes(3)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
 })
 
 test('revalidates correctly relations for depth 2 ', async () => {
@@ -160,13 +160,13 @@ test('revalidates correctly relations for depth 2 ', async () => {
   await waitForAfterCalls()
   // Verify revalidateTag was called for all related collections in the chain
   expect(mockRevalidateTag).toHaveBeenCalledTimes(7)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('categories')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('categories', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`, { expire: 0 })
 
   mockRevalidateTag.mockClear()
 
@@ -181,13 +181,13 @@ test('revalidates correctly relations for depth 2 ', async () => {
 
   await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(7)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('categories')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('categories', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`, { expire: 0 })
 
   mockRevalidateTag.mockClear()
 
@@ -262,15 +262,15 @@ test('revalidates correctly relations for depth 3', async () => {
   await waitForAfterCalls()
   // Verify revalidateTag was called for all related collections in the chain
   expect(mockRevalidateTag).toHaveBeenCalledTimes(9)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('categories')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('series')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`series.${series.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('categories', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('series', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`series.${series.id}`, { expire: 0 })
 
   mockRevalidateTag.mockClear()
 
@@ -286,15 +286,15 @@ test('revalidates correctly relations for depth 3', async () => {
 
   await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(9)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('categories')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('series')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`series.${series.id}`)
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('categories', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`categories.${category.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('series', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`series.${series.id}`, { expire: 0 })
 
   mockRevalidateTag.mockClear()
 
@@ -351,10 +351,10 @@ test('revalidates correctly relations of a global -> collection ', async () => {
 
   // Verify revalidateTag was called for all related collections and the global
   expect(mockRevalidateTag).toHaveBeenCalledTimes(4)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings', { expire: 0 })
 
   mockRevalidateTag.mockClear()
   mockAfter.mockClear()
@@ -368,10 +368,10 @@ test('revalidates correctly relations of a global -> collection ', async () => {
   await waitForAfterCalls()
 
   expect(mockRevalidateTag).toHaveBeenCalledTimes(4)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings', { expire: 0 })
 })
 
 test('revalidates correctly relations of a global -> collection -> collection', async () => {
@@ -424,12 +424,12 @@ test('revalidates correctly relations of a global -> collection -> collection', 
   await waitForAfterCalls()
   // Verify revalidateTag was called for all related collections and the global
   expect(mockRevalidateTag).toHaveBeenCalledTimes(6)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings', { expire: 0 })
 
   mockRevalidateTag.mockClear()
   mockAfter.mockClear()
@@ -446,12 +446,12 @@ test('revalidates correctly relations of a global -> collection -> collection', 
 
   await waitForAfterCalls()
   expect(mockRevalidateTag).toHaveBeenCalledTimes(6)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('authors')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('posts')
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`)
-  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings')
+  expect(mockRevalidateTag).toHaveBeenCalledWith('authors', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`authors.${author.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('posts', { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.id}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith(`posts.${post.slug}`, { expire: 0 })
+  expect(mockRevalidateTag).toHaveBeenCalledWith('siteSettings', { expire: 0 })
 
   mockRevalidateTag.mockClear()
   mockAfter.mockClear()
