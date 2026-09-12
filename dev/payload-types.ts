@@ -156,6 +156,56 @@ export interface Category {
  */
 export interface Post {
   id: number;
+  sections?:
+    | (
+        | {
+            cta?: {
+              link?: (number | null) | Post;
+            };
+            content?: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            } | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'hero';
+          }
+        | {
+            cta?: {
+              link?: (number | null) | Post;
+            };
+            content?: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            } | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'text';
+          }
+      )[]
+    | null;
   slug: string;
   title?: string | null;
   content?: {
@@ -357,6 +407,34 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "posts_select".
  */
 export interface PostsSelect<T extends boolean = true> {
+  sections?:
+    | T
+    | {
+        hero?:
+          | T
+          | {
+              cta?:
+                | T
+                | {
+                    link?: T;
+                  };
+              content?: T;
+              id?: T;
+              blockName?: T;
+            };
+        text?:
+          | T
+          | {
+              cta?:
+                | T
+                | {
+                    link?: T;
+                  };
+              content?: T;
+              id?: T;
+              blockName?: T;
+            };
+      };
   slug?: T;
   title?: T;
   content?: T;

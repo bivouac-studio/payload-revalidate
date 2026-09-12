@@ -1,6 +1,6 @@
 {
   "name": "payload-revalidate",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "A plugin to use PayloadCMS with next/cache architecture, revalidating payload data.",
   "license": "MIT",
   "type": "module",

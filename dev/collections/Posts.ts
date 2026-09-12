@@ -31,6 +31,21 @@ const Posts: CollectionConfig = {
   },
 
   fields: [
+    {
+      name: 'sections',
+      type: 'blocks',
+      blocks: ['hero', 'text'].map((slug) => ({
+        slug,
+        fields: [
+          {
+            name: 'cta',
+            type: 'group',
+            fields: [{ name: 'link', type: 'relationship', relationTo: 'posts' }],
+          },
+          { name: 'content', type: 'richText' },
+        ],
+      })),
+    },
     { name: 'slug', type: 'text', required: true, unique: true },
     {
       name: 'title',
